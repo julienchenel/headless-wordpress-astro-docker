@@ -16,6 +16,7 @@ Une stack **100% reproductible** pour créer des sites WordPress headless avec :
 
 ## 📁 Structure du projet 
 
+```bash
 headless-wordpress-astro-docker/
 ├── backend/                  # WordPress + Bedrock
 │   ├── composer.json         # Dépendances (Pods, Headless Bridge, etc.)
@@ -64,6 +65,7 @@ headless-wordpress-astro-docker/
 ├── Dockerfile.frontend      # Image Astro
 ├── .env.example              # Variables globales
 └── README.md                 # Documentation
+```
 
 ## 🛠️ Installation
 
