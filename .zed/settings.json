@@ -2,7 +2,7 @@
   "terminal": {
     "working_directory": "always_home",
     "shell": {
-      "program": "powershell.exe"
+      "program": "C:\\Windows\\System32\\wsl.exe"
     }
   }
 }
