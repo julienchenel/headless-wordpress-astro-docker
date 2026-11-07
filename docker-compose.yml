@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # --- Backend: WordPress + PHP 8.5 + Nginx ---
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: wp_headless
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - memcached
+    environment:
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_NAME=${DB_NAME:-wp_headless}
+      - WORDPRESS_DB_USER=${DB_USER:-wp_user}
+      - WORDPRESS_DB_PASSWORD=${DB_PASSWORD:-wp_password}
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WP_ENV=development
+      - WP_DEBUG=true
+      - WP_HOME=http://localhost:8080
+      - WP_SITEURL=http://localhost:8080
+      - JWT_SECRET=${JWT_SECRET:-ta_clef_secrete_jwt_12345}
+      - CLOUDFLARE_BUILD_HOOK=${CLOUDFLARE_BUILD_HOOK:-}
+    volumes:
+      - ./backend:/var/www/html  # Montage du code backend
+      - wp_uploads:/var/www/html/web/wp-content/uploads  # Persistance des uploads
+      - wp_plugins:/var/www/html/web/wp-content/plugins  # Persistance des plugins
+      - wp_mu-plugins:/var/www/html/web/wp-content/mu-plugins  # Persistance des mu-plugins
+    networks:
+      - headless_network
+    ports:
+      - "8080:80"  # Nginx (port 80 dans le conteneur → 8080 sur l'hôte)
+
+  # --- Base de données MySQL 8.0 ---
+  mysql:
+    image: mysql:8.0
+    container_name: wp_mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=${DB_NAME:-wp_headless}
+      - MYSQL_USER=${DB_USER:-wp_user}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-wp_password}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_password}
+    volumes:
+      - mysql_data:/var/lib/mysql  # Persistance de la DB
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf  # Config MySQL
+    networks:
+      - headless_network
+    ports:
+      - "3306:3306"  # Optionnel (accès local à MySQL)
+
+  # --- Memcached (Cache objet) ---
+  memcached:
+    image: memcached:1.6
+    container_name: wp_memcached
+    restart: unless-stopped
+    command: -m 256  # 256 Mo de RAM
+    networks:
+      - headless_network
+
+  # --- Frontend: Astro (Node.js) ---
+  astro:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: astro_frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - VITE_WP_API_URL=http://wordpress:80/wp-json/headless-bridge/v1
+      - VITE_WP_URL=http://wordpress:80
+    volumes:
+      - ./frontend:/app  # Montage du code frontend
+      - /app/node_modules  # node_modules isolé dans le conteneur
+    networks:
+      - headless_network
+    ports:
+      - "3000:3000"  # Astro dev server
+      - "4321:4321"  # Astro preview (si besoin)
+    depends_on:
+      - wordpress
+
+  # --- Nginx (Reverse Proxy pour le frontend en production) ---
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: unless-stopped
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./frontend/dist:/usr/share/nginx/html  # Montage du build Astro
+    networks:
+      - headless_network
+    ports:
+      - "80:80"  # Port 80 pour le frontend en prod
+    depends_on:
+      - astro
+
+# --- Volumes persistants ---
+volumes:
+  mysql_data:
+  wp_uploads:
+  wp_plugins:
+  wp_mu-plugins:
+
+# --- Réseau interne ---
+networks:
+  headless_network:
+    driver: bridge

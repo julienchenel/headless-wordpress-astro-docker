@@ -1,0 +1,17 @@
+# --- Base: Node.js 20 ---
+FROM node:20-alpine AS node
+
+# --- Installer les dépendances ---
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm install
+
+# --- Copier le code Astro ---
+COPY frontend/ .
+
+# --- Build Astro (pour la production) ---
+RUN npm run build
+
+# --- Démarrer le dev server ---
+EXPOSE 3000 4321
+CMD ["npm", "run", "dev"]

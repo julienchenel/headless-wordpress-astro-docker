@@ -1,0 +1,107 @@
+name: Deploy Headless WordPress + Astro
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  # --- Backend (Hostinger) ---
+  HOSTINGER_FTP_SERVER: ${{ secrets.HOSTINGER_FTP_SERVER }}
+  HOSTINGER_FTP_USER: ${{ secrets.HOSTINGER_FTP_USER }}
+  HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+  HOSTINGER_FTP_PATH: /public_html
+
+  # --- Frontend (Cloudflare Pages) ---
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  CLOUDFLARE_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  # --- WordPress ---
+  WP_ENV: production
+  DB_NAME: ${{ secrets.DB_NAME }}
+  DB_USER: ${{ secrets.DB_USER }}
+  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+  DB_HOST: ${{ secrets.DB_HOST }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  CLOUDFLARE_BUILD_HOOK: ${{ secrets.CLOUDFLARE_BUILD_HOOK }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- 1. Déployer le Backend (WordPress) sur Hostinger ---
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, mysqli, pdo_mysql, gd, zip, opcache, memcached
+          tools: composer
+
+      - name: Installer les dépendances backend
+        run: |
+          cd backend
+          composer install --no-dev --optimize-autoloader
+
+      - name: Configurer .env pour la production
+        run: |
+          cd backend
+          sed -i "s/WP_ENV=development/WP_ENV=production/" .env
+          sed -i "s/WP_DEBUG=true/WP_DEBUG=false/" .env
+          sed -i "s/DB_NAME=.*/DB_NAME=${{ secrets.DB_NAME }}/" .env
+          sed -i "s/DB_USER=.*/DB_USER=${{ secrets.DB_USER }}/" .env
+          sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" .env
+          sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.DB_HOST }}/" .env
+          sed -i "s/JWT_SECRET=.*/JWT_SECRET=${{ secrets.JWT_SECRET }}/" .env
+          sed -i "s|CLOUDFLARE_BUILD_HOOK=.*|CLOUDFLARE_BUILD_HOOK=${{ secrets.CLOUDFLARE_BUILD_HOOK }}|" .env
+
+      - name: Déployer sur Hostinger (FTP)
+        uses: SamKirkland/FTP-Deploy-Action@4.3.4
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USER }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          local-dir: backend/
+          server-dir: ${{ env.HOSTINGER_FTP_PATH }}
+          exclude: |
+            **/.git*
+            **/.env*
+            **/node_modules/
+            **/vendor/
+            **/*.md
+            **/Dockerfile*
+            **/docker-compose.yml
+            **/docker/
+
+      # --- 2. Déployer le Frontend (Astro) sur Cloudflare Pages ---
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Installer les dépendances frontend
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Builder le frontend (Astro)
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Déployer sur Cloudflare Pages
+        uses: cloudflare/pages-action@1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+          directory: frontend/dist
+          branch: ${{ github.ref_name }}
+
+      # --- 3. Notifier le succès ---
+      - name: Succès du déploiement
+        run: echo "✅ Déploiement terminé avec succès !"

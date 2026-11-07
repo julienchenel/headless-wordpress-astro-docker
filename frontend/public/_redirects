@@ -1,0 +1,8 @@
+# Rediriger le backend vers le frontend (si nécessaire)
+/wp-content/uploads/*  https://ton-frontend.com/wp-content/uploads/:splat  301
+
+# Rediriger l'API Headless Bridge vers le frontend (pour les requêtes internes)
+/wp-json/headless-bridge/*  https://ton-backend.com/wp-json/headless-bridge/:splat  200
+
+# Rediriger les pages WordPress vers le frontend
+/*  /index.html  200

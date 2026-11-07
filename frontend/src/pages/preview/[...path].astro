@@ -1,0 +1,22 @@
+// 1. Récupérer le token et le path depuis l'URL
+const { path } = Astro.params;
+const token = Astro.url.searchParams.get('token');
+
+if (!token) {
+  return Response.redirect('/', 302);
+}
+
+// 2. Récupérer les données via l'API de preview
+const previewData = await fetch(
+  `/api/preview?token=${token}&post_type=${path[0]}&post_name=${path[1]}`
+).then((res) => {
+  if (!res.ok) throw new Error('Failed to load preview');
+  return res.json();
+}).catch(() => null);
+
+if (!previewData) {
+  return Response.redirect('/', 302);
+}
+
+// 3. Afficher le contenu
+const { title, content, yoast_meta } = previewData;

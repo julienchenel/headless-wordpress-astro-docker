@@ -1,0 +1,43 @@
+<!--
+Props: { data: HeadlessBridgePost }
+const { data } = Astro.props;
+
+const {
+  title = 'Mon Site Headless',
+  meta_description = '',
+  og_title = title,
+  og_description = meta_description,
+  og_image = '',
+  canonical = '',
+  schema = null,
+} = data?.yoast_meta || {};
+-->
+
+<head>
+  <!-- Titres -->
+  <title>{title}</title>
+  <meta name="description" content={meta_description} />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content={og_title} />
+  <meta property="og:description" content={og_description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonical || Astro.url.pathname} />
+  {og_image && <meta property="og:image" content={og_image} />}
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={og_title} />
+  <meta name="twitter:description" content={og_description} />
+  {og_image && <meta name="twitter:image" content={og_image} />}
+
+  <!-- Canonical -->
+  {canonical && <link rel="canonical" href={canonical} />}
+
+  <!-- Schema.org (JSON-LD) -->
+  {schema && (
+    <script type="application/ld+json">
+      {JSON.stringify(schema)}
+    </script>
+  )}
+</head>

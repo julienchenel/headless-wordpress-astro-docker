@@ -1,0 +1,59 @@
+{
+  "name": "headless-wordpress/bedrock",
+  "type": "project",
+  "license": "MIT",
+  "description": "WordPress Headless avec Bedrock",
+  "authors": [
+    {
+      "name": "Neiluj",
+      "email": "neiluj@localhost"
+    }
+  ],
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org"
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "roots/bedrock",
+        "version": "1.0.0",
+        "type": "wordpress-core",
+        "source": {
+          "url": "https://wordpress.org/wordpress-6.5.2.tar.gz",
+          "type": "tar",
+          "reference": "6.5.2"
+        }
+      }
+    }
+  ],
+  "require": {
+    "php": ">=8.5",
+    "roots/bedrock": "1.0.0",
+    "wpackagist-plugin/pods": "^2.10",
+    "wpackagist-plugin/headless-bridge": "^1.0",
+    "wpackagist-plugin/litespeed-cache": "^5.7",
+    "wpackagist-plugin/query-monitor": "^3.11",
+    "wpackagist-plugin/ithemes-security": "^8.0",
+    "wpackagist-plugin/polylang": "^3.4",
+    "vlucas/phpdotenv": "^5.5"
+  },
+  "require-dev": {
+    "wp-cli/wp-cli": "^2.6"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true,
+    "platform-check": false
+  },
+  "extra": {
+    "wordpress-install-dir": "web/wp"
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "wp core config --dbname=${DB_NAME} --dbuser=${DB_USER} --dbpass=${DB_PASSWORD} --dbhost=mysql --path=web/wp --allow-root",
+      "wp core install --url=${WP_HOME} --title=\"Headless WordPress\" --admin_user=admin --admin_password=${DB_PASSWORD} --admin_email=admin@localhost --skip-email --path=web/wp --allow-root"
+    ]
+  }
+}
