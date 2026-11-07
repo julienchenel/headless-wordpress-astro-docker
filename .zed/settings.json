@@ -1,8 +1,0 @@
-{
-  "terminal": {
-    "working_directory": "always_home",
-    "shell": {
-      "program": "C:\\Windows\\System32\\wsl.exe"
-    }
-  }
-}
