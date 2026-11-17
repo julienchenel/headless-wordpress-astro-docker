@@ -1,9 +1,10 @@
-# Prépare les branches que Hostinger déploie automatiquement à chaque push :
+# Prépare les branches que Hostinger déploie :
 #
 # - deploy/backend  : contenu de backend/ prêt à servir (vendor, WordPress et plugins
-#                     installés par Composer). Hostinger le déploie dans le dossier du
-#                     sous-domaine du CMS, dont la racine web pointe sur web/.
-#                     Le .env de production et les uploads restent sur le serveur.
+#                     installés par Composer). Hostinger le clone dans public_html/app
+#                     (déploiement Git, pas le déploiement « statique » qui ignore les
+#                     dossiers vendor/) et fait un `git pull` à chaque redéploiement.
+#                     Le .env de production et les uploads, non suivis, restent en place.
 # - deploy/frontend : copie de main. Hostinger (Node.js, app Astro, dossier frontend)
 #                     reconstruit le site à chaque push sur cette branche.
 #
@@ -43,9 +44,18 @@ jobs:
         run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
       - name: Publier sur la branche deploy/backend
+        # Historique continu (pas de force push) : Hostinger fait un `git pull` à chaque déploiement.
+        env:
+          REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
         run: |
           out="$RUNNER_TEMP/backend"
-          rsync -a \
+          if git ls-remote --exit-code --heads "$REMOTE" deploy/backend >/dev/null; then
+            git clone -q --branch deploy/backend --single-branch "$REMOTE" "$out"
+          else
+            mkdir -p "$out" && git -C "$out" init -q -b deploy/backend
+          fi
+          rsync -a --delete \
+            --exclude '.git/' \
             --exclude '.env' \
             --exclude 'web/wp-content/uploads/' \
             --exclude 'web/wp-content/cache/' \
@@ -53,11 +63,14 @@ jobs:
             backend/ "$out/"
           cd "$out"
           printf '.env\nweb/wp-content/uploads/\nweb/wp-content/cache/\nweb/wp-content/debug.log\n' > .gitignore
-          git init -q -b deploy/backend
           git add -A -f
+          if git diff --cached --quiet; then
+            echo "Backend inchangé"
+            exit 0
+          fi
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit -q -m "Backend ${GITHUB_SHA::7}"
-          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:deploy/backend
+          git push -q "$REMOTE" HEAD:deploy/backend
 
   frontend:
     runs-on: ubuntu-latest
