@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit0a273fa5a562cd631d44cbcb5516ba44
+class ComposerStaticInit09345b4f5f05267cc73f4b92eeab4b31
 {
     public static $files = array (
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
@@ -14,6 +14,10 @@ class ComposerStaticInit0a273fa5a562cd631d44cbcb5516ba44
     );
 
     public static $prefixLengthsPsr4 = array (
+        'W' =>
+        array (
+            'WPGraphQL\\Extensions\\Polylang\\' => 30,
+        ),
         'S' =>
         array (
             'Symfony\\Polyfill\\Php80\\' => 23,
@@ -51,6 +55,10 @@ class ComposerStaticInit0a273fa5a562cd631d44cbcb5516ba44
     );
 
     public static $prefixDirsPsr4 = array (
+        'WPGraphQL\\Extensions\\Polylang\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src',
+        ),
         'Symfony\\Polyfill\\Php80\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
@@ -262,14 +270,23 @@ class ComposerStaticInit0a273fa5a562cd631d44cbcb5516ba44
         'Symfony\\Polyfill\\Php80\\PhpToken' => __DIR__ . '/..' . '/symfony/polyfill-php80/PhpToken.php',
         'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
         'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
+        'WPGraphQL\\Extensions\\Polylang\\Helpers' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/Helpers.php',
+        'WPGraphQL\\Extensions\\Polylang\\LanguageRootQueries' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/LanguageRootQueries.php',
+        'WPGraphQL\\Extensions\\Polylang\\Loader' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/Loader.php',
+        'WPGraphQL\\Extensions\\Polylang\\MenuItem' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/MenuItem.php',
+        'WPGraphQL\\Extensions\\Polylang\\OptionsPages' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/OptionsPages.php',
+        'WPGraphQL\\Extensions\\Polylang\\PolylangTypes' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/PolylangTypes.php',
+        'WPGraphQL\\Extensions\\Polylang\\PostObject' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/PostObject.php',
+        'WPGraphQL\\Extensions\\Polylang\\StringsTranslations' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/StringsTranslations.php',
+        'WPGraphQL\\Extensions\\Polylang\\TermObject' => __DIR__ . '/../..' . '/web/wp-content/plugins/wp-graphql-polylang/src/TermObject.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit0a273fa5a562cd631d44cbcb5516ba44::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit0a273fa5a562cd631d44cbcb5516ba44::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit0a273fa5a562cd631d44cbcb5516ba44::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit09345b4f5f05267cc73f4b92eeab4b31::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit09345b4f5f05267cc73f4b92eeab4b31::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit09345b4f5f05267cc73f4b92eeab4b31::$classMap;
 
         }, null, ClassLoader::class);
     }

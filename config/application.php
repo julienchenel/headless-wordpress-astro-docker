@@ -24,6 +24,8 @@ if (file_exists($root_dir . '/.env')) {
 
 // --- Environnement et URLs ---
 define('WP_ENV', env('WP_ENV') ?: 'production');
+// Type d'environnement WordPress : « local » autorise les mots de passe d'application sans HTTPS.
+define('WP_ENVIRONMENT_TYPE', WP_ENV === 'development' ? 'local' : 'production');
 define('WP_HOME', env('WP_HOME'));
 define('WP_SITEURL', env('WP_SITEURL'));
 
@@ -56,6 +58,8 @@ define('WP_DEBUG', $is_dev && (bool) env('WP_DEBUG'));
 define('WP_DEBUG_LOG', env('WP_DEBUG_LOG') ?? false);
 define('WP_DEBUG_DISPLAY', false);
 define('SCRIPT_DEBUG', $is_dev);
+// Logs de debug WPGraphQL dans les réponses (extensions.debug), jamais en production.
+define('GRAPHQL_DEBUG', $is_dev && (bool) env('GRAPHQL_DEBUG'));
 ini_set('display_errors', '0');
 
 // --- Cache ---

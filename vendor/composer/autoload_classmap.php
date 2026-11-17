@@ -174,4 +174,13 @@ return array(
     'Symfony\\Polyfill\\Php80\\PhpToken' => $vendorDir . '/symfony/polyfill-php80/PhpToken.php',
     'UnhandledMatchError' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
     'ValueError' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
+    'WPGraphQL\\Extensions\\Polylang\\Helpers' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/Helpers.php',
+    'WPGraphQL\\Extensions\\Polylang\\LanguageRootQueries' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/LanguageRootQueries.php',
+    'WPGraphQL\\Extensions\\Polylang\\Loader' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/Loader.php',
+    'WPGraphQL\\Extensions\\Polylang\\MenuItem' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/MenuItem.php',
+    'WPGraphQL\\Extensions\\Polylang\\OptionsPages' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/OptionsPages.php',
+    'WPGraphQL\\Extensions\\Polylang\\PolylangTypes' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/PolylangTypes.php',
+    'WPGraphQL\\Extensions\\Polylang\\PostObject' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/PostObject.php',
+    'WPGraphQL\\Extensions\\Polylang\\StringsTranslations' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/StringsTranslations.php',
+    'WPGraphQL\\Extensions\\Polylang\\TermObject' => $baseDir . '/web/wp-content/plugins/wp-graphql-polylang/src/TermObject.php',
 );

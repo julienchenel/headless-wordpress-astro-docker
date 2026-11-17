@@ -878,6 +878,60 @@
             "install-path": "../symfony/polyfill-php80"
         },
         {
+            "name": "valu/wp-graphql-polylang",
+            "version": "v0.7.1",
+            "version_normalized": "0.7.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/valu-digital/wp-graphql-polylang.git",
+                "reference": "c00f1a65db4ceb18c9c62006ed497128aba1bed1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/valu-digital/wp-graphql-polylang/zipball/c00f1a65db4ceb18c9c62006ed497128aba1bed1",
+                "reference": "c00f1a65db4ceb18c9c62006ed497128aba1bed1",
+                "shasum": ""
+            },
+            "require-dev": {
+                "bordoni/phpass": "*",
+                "codeception/module-asserts": "^1.0",
+                "codeception/module-cli": "^1.0",
+                "codeception/module-db": "^1.0",
+                "codeception/module-filesystem": "^1.0",
+                "codeception/module-phpbrowser": "^1.0",
+                "codeception/module-rest": "^1.0",
+                "codeception/module-webdriver": "^1.0",
+                "codeception/util-universalframework": "^1.0",
+                "lucatume/wp-browser": "~2.2",
+                "valu/wp-testing-tools": "^0.4.0"
+            },
+            "time": "2025-05-06T12:46:12+00:00",
+            "type": "wordpress-plugin",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "WPGraphQL\\Extensions\\Polylang\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Esa-Matti Suuronen",
+                    "email": "esa-matti.suuronen@valu.fi",
+                    "role": "developer"
+                }
+            ],
+            "description": "Polylang bindings for wp-graphql",
+            "support": {
+                "issues": "https://github.com/valu-digital/wp-graphql-polylang/issues",
+                "source": "https://github.com/valu-digital/wp-graphql-polylang"
+            },
+            "install-path": "../../web/wp-content/plugins/wp-graphql-polylang"
+        },
+        {
             "name": "vlucas/phpdotenv",
             "version": "v5.8.0",
             "version_normalized": "5.8.0.0",
@@ -1005,6 +1059,27 @@
             "installation-source": "dist",
             "homepage": "https://wordpress.org/plugins/litespeed-cache/",
             "install-path": "../../web/wp-content/plugins/litespeed-cache"
+        },
+        {
+            "name": "wpackagist-plugin/mcp-adapter",
+            "version": "0.7.1",
+            "version_normalized": "0.7.1.0",
+            "source": {
+                "type": "svn",
+                "url": "https://plugins.svn.wordpress.org/mcp-adapter/",
+                "reference": "tags/0.7.1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://downloads.wordpress.org/plugin/mcp-adapter.0.7.1.zip"
+            },
+            "require": {
+                "composer/installers": "^1.0 || ^2.0"
+            },
+            "type": "wordpress-plugin",
+            "installation-source": "dist",
+            "homepage": "https://wordpress.org/plugins/mcp-adapter/",
+            "install-path": "../../web/wp-content/plugins/mcp-adapter"
         },
         {
             "name": "wpackagist-plugin/pods",
