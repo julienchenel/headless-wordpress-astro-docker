@@ -72,6 +72,21 @@ jobs:
             commit -q -m "Backend ${GITHUB_SHA::7}"
           git push -q "$REMOTE" HEAD:deploy/backend
 
+      - name: Déclencher le déploiement Hostinger (git pull)
+        # Appelé après la mise à jour de deploy/backend : un webhook GitHub sur push
+        # partirait dès le push sur main, avant que la branche soit prête.
+        env:
+          WEBHOOK: ${{ secrets.HOSTINGER_BACKEND_WEBHOOK }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "Secret HOSTINGER_BACKEND_WEBHOOK absent : déploiement du backend à lancer depuis hPanel."
+            exit 0
+          fi
+          curl -fsS --retry 3 --retry-delay 10 -X POST \
+            -H 'Content-Type: application/json' -H 'X-GitHub-Event: push' \
+            -d '{"ref":"refs/heads/deploy/backend"}' "$WEBHOOK" >/dev/null
+          echo "Déploiement du backend demandé à Hostinger."
+
   frontend:
     runs-on: ubuntu-latest
     steps:

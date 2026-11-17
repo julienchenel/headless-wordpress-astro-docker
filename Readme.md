@@ -193,7 +193,7 @@ Admin WordPress : https://evident-snow-eland-65.hostingersite.com/wp/wp-admin
 
 ### Comment ça marche
 À chaque push sur `main`, GitHub Actions (`.github/workflows/deploy.yml`) met à jour deux branches :
-- **`deploy/backend`** contient `backend/` avec `vendor/`, WordPress et les plugins déjà installés par Composer. Un webhook GitHub prévient Hostinger, qui fait un `git pull` dans `public_html/app` puis un `composer install`. Le `.env` de production et les uploads, non suivis par Git, restent en place.
+- **`deploy/backend`** contient `backend/` avec `vendor/`, WordPress et les plugins déjà installés par Composer. Une fois la branche à jour, le workflow appelle le webhook de déploiement Hostinger (secret GitHub `HOSTINGER_BACKEND_WEBHOOK`). Hostinger fait alors un `git pull` dans `public_html/app`, puis un `composer install`. Le `.env` de production et les uploads, non suivis par Git, restent en place.
 - **`deploy/frontend`** est une copie de `main`. Hostinger le détecte, lance `npm run build` dans `frontend/` et redémarre le serveur Node.
 
 Quand un contenu est publié dans WordPress, le mu-plugin `headless-webhook.php` déclenche le même workflow, qui ne reconstruit que le frontend. Il faut pour cela renseigner `GITHUB_REBUILD_REPO` et `GITHUB_REBUILD_TOKEN` dans le `.env` du serveur (voir plus bas).
