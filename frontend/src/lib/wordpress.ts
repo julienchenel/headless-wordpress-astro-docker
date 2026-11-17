@@ -3,6 +3,23 @@
  */
 import { WP_URL } from 'astro:env/server';
 
+export interface WpLanguage {
+  /** Slug Polylang (fr, en…) : préfixe d'URL et identifiant interne. */
+  slug: string;
+  /** Code GraphQL (FR, EN…) : valeur des filtres `language`. */
+  code: string;
+  name: string;
+  /** Locale WordPress (fr_FR, en_GB…). */
+  locale: string;
+  /** URI de l'accueil de la langue (/ pour la langue par défaut, /fr/…). */
+  homeUri: string;
+}
+
+export interface WpTranslation {
+  uri: string;
+  language: { slug: string } | null;
+}
+
 export interface WpNode {
   id: string;
   uri: string;
@@ -10,6 +27,15 @@ export interface WpNode {
   content?: string;
   excerpt?: string;
   date?: string;
+  /** Langue Polylang (articles et pages ; absente si Polylang n'est pas actif). */
+  language?: { slug: string } | null;
+  translations?: WpTranslation[] | null;
+}
+
+export interface WpLanguages {
+  languages: WpLanguage[];
+  /** Langue par défaut, ou null sans Polylang. */
+  defaultLanguage: WpLanguage | null;
 }
 
 export interface WpSettings {
@@ -36,7 +62,10 @@ export async function wpQuery<T>(query: string, variables: Record<string, unknow
   return json.data as T;
 }
 
-const NODE_FIELDS = `
+// Langue et traductions : ajoutées par WPGraphQL Polylang sur Post et Page.
+const LANGUAGE_FIELDS = `language { slug } translations { uri language { slug } }`;
+
+const COMMON_FIELDS = `
   id
   uri
   ... on NodeWithTitle { title }
@@ -44,6 +73,35 @@ const NODE_FIELDS = `
   ... on NodeWithExcerpt { excerpt }
   ... on ContentNode { date }
 `;
+
+/** Champs d'un contenu de type quelconque (contentNodes, nodeByUri). */
+const NODE_FIELDS = `${COMMON_FIELDS}
+  ... on Post { ${LANGUAGE_FIELDS} }
+  ... on Page { ${LANGUAGE_FIELDS} }
+`;
+
+/** Champs d'un article (requête posts : pas de fragment Page possible). */
+const POST_FIELDS = `${COMMON_FIELDS} ${LANGUAGE_FIELDS}`;
+
+/** Langues Polylang (vide si Polylang ou WPGraphQL Polylang n'est pas actif). */
+export async function getLanguages(): Promise<WpLanguages> {
+  try {
+    const data = await wpQuery<{
+      languages: (Omit<WpLanguage, 'homeUri'> & { homeUrl: string })[] | null;
+      defaultLanguage: { slug: string } | null;
+    }>(`{ languages { slug code name locale homeUrl } defaultLanguage { slug } }`);
+    const languages = (data.languages ?? []).map(({ homeUrl, ...language }) => ({
+      ...language,
+      homeUri: new URL(homeUrl).pathname,
+    }));
+    const defaultLanguage = languages.find((l) => l.slug === data.defaultLanguage?.slug) ?? languages[0] ?? null;
+    // Langue par défaut en premier (ordre du sélecteur de langue).
+    languages.sort((a, b) => Number(b === defaultLanguage) - Number(a === defaultLanguage));
+    return { languages, defaultLanguage };
+  } catch {
+    return { languages: [], defaultLanguage: null };
+  }
+}
 
 export async function getSettings(): Promise<WpSettings> {
   // homeUrl : champ ajouté par le mu-plugin headless-graphql (WP_HOME).
@@ -76,10 +134,15 @@ export async function getAllNodes(): Promise<WpNode[]> {
   return nodes.filter((node) => node.uri && node.uri !== '/');
 }
 
-export async function getLatestPosts(count = 10): Promise<WpNode[]> {
+/** Derniers articles, dans une langue (code GraphQL, ex. FR) ou toutes langues confondues. */
+export async function getLatestPosts(count = 10, languageCode?: string): Promise<WpNode[]> {
   const data = await wpQuery<{ posts: { nodes: WpNode[] } }>(
-    `query ($count: Int) { posts(first: $count) { nodes { ${NODE_FIELDS} } } }`,
-    { count },
+    languageCode
+      ? `query ($count: Int, $language: LanguageCodeFilterEnum) {
+          posts(first: $count, where: { language: $language }) { nodes { ${POST_FIELDS} } }
+        }`
+      : `query ($count: Int) { posts(first: $count) { nodes { ${POST_FIELDS} } } }`,
+    languageCode ? { count, language: languageCode } : { count },
   );
   return data.posts.nodes;
 }

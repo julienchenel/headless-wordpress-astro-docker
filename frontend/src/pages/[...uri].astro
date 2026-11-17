@@ -4,7 +4,8 @@
  * générées au build à partir de leur URI.
  */
 import Base from '../layouts/Base.astro';
-import { getAllNodes, getSettings, type WpNode } from '../lib/wordpress';
+import { alternatesForNode, languageOf, t, toHreflang } from '../lib/i18n';
+import { getAllNodes, getLanguages, getSettings, type WpNode } from '../lib/wordpress';
 import { rewriteUrls } from '../utils/rewriteUrls';
 
 export async function getStaticPaths() {
@@ -16,11 +17,19 @@ export async function getStaticPaths() {
 }
 
 const { node } = Astro.props as { node: WpNode };
-const settings = await getSettings();
+const [settings, languages] = await Promise.all([getSettings(), getLanguages()]);
+const language = languageOf(node, languages);
+const strings = t(language?.slug);
 ---
 
-<Base title={`${node.title ?? ''} – ${settings.title}`} description={node.excerpt}>
-  <a class="text-sm underline" href="/">← {settings.title}</a>
+<Base
+  title={`${node.title ?? ''} – ${settings.title}`}
+  description={node.excerpt}
+  lang={language?.slug}
+  hreflang={toHreflang(language)}
+  alternates={alternatesForNode(node, languages)}
+>
+  <a class="text-sm underline" href={language?.homeUri ?? '/'}>← {strings.home}</a>
   <article class="mt-6">
     <h1 class="mb-6 text-3xl font-bold">{node.title}</h1>
     <div class="prose" set:html={rewriteUrls(node.content, settings.url)} />

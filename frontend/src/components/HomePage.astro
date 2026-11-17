@@ -1,0 +1,40 @@
+---
+/**
+ * Accueil d'une langue : derniers articles dans cette langue.
+ * Sans Polylang (aucune langue), affiche tous les articles.
+ */
+import Base from '../layouts/Base.astro';
+import { alternatesForHome, t, toHreflang } from '../lib/i18n';
+import { getLatestPosts, getSettings, type WpLanguage, type WpLanguages } from '../lib/wordpress';
+
+interface Props {
+  language: WpLanguage | null;
+  languages: WpLanguages;
+}
+
+const { language, languages } = Astro.props;
+const [settings, posts] = await Promise.all([getSettings(), getLatestPosts(10, language?.code)]);
+const strings = t(language?.slug);
+---
+
+<Base
+  title={settings.title}
+  description={settings.description}
+  lang={language?.slug}
+  hreflang={toHreflang(language)}
+  alternates={alternatesForHome(language, languages)}
+>
+  <h1 class="mb-2 text-3xl font-bold">{settings.title}</h1>
+  <h2 class="mb-8 text-lg text-slate-600">{strings.latestPosts}</h2>
+  {posts.length === 0 && <p>{strings.noPosts}</p>}
+  <ul class="space-y-6">
+    {
+      posts.map((post) => (
+        <li>
+          <a class="text-xl font-semibold underline" href={post.uri}>{post.title}</a>
+          <div class="text-slate-600" set:html={post.excerpt} />
+        </li>
+      ))
+    }
+  </ul>
+</Base>

@@ -1,5 +1,7 @@
 ---
+import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import SEO from '../components/SEO.astro';
+import { t, type Alternate } from '../lib/i18n';
 import '../styles/global.css';
 
 interface Props {
@@ -7,19 +9,29 @@ interface Props {
   description?: string;
   image?: string;
   noindex?: boolean;
+  /** Slug Polylang de la page (fr, en…). */
+  lang?: string;
+  /** Langue au format BCP 47 (fr-FR…), pour l'attribut lang. */
+  hreflang?: string;
+  /** Versions de la page dans chaque langue (sélecteur + hreflang). */
+  alternates?: Alternate[];
 }
 
-const props = Astro.props;
+const { lang, hreflang = 'fr', alternates = [], ...seo } = Astro.props;
+const strings = t(lang);
 ---
 
 <!doctype html>
-<html lang="fr">
+<html lang={hreflang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <SEO {...props} />
+    <SEO {...seo} hreflang={hreflang} alternates={alternates} />
   </head>
   <body class="mx-auto max-w-3xl px-4 py-10 text-slate-800">
+    <header class="mb-8 flex justify-end">
+      <LanguageSwitcher alternates={alternates} label={strings.languages} />
+    </header>
     <slot />
   </body>
 </html>

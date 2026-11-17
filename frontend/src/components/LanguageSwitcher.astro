@@ -1,0 +1,34 @@
+---
+/**
+ * Sélecteur de langue : lien vers la traduction de la page, ou vers l'accueil
+ * de la langue quand la page n'est pas traduite.
+ */
+import type { Alternate } from '../lib/i18n';
+
+interface Props {
+  alternates: Alternate[];
+  label: string;
+}
+
+const { alternates, label } = Astro.props;
+---
+
+{
+  alternates.length > 1 && (
+    <nav aria-label={label}>
+      <ul class="flex gap-3 text-sm">
+        {alternates.map((alt) => (
+          <li>
+            {alt.current ? (
+              <span class="font-semibold" aria-current="true">{alt.name}</span>
+            ) : (
+              <a class="underline" href={alt.href} hreflang={alt.hreflang} lang={alt.hreflang}>
+                {alt.name}
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}

@@ -46,11 +46,14 @@ headless-wordpress-astro-docker/
 │
 ├── frontend/                 # Astro 7 (SSG + serveur Node pour la preview)
 │   ├── src/
-│   │   ├── components/SEO.astro
+│   │   ├── components/       # SEO (hreflang), LanguageSwitcher, HomePage
 │   │   ├── layouts/Base.astro
-│   │   ├── lib/wordpress.ts  # Requêtes WPGraphQL + preview
+│   │   ├── lib/
+│   │   │   ├── wordpress.ts  # Requêtes WPGraphQL (langues, contenus) + preview
+│   │   │   └── i18n.ts       # Langue des pages, hreflang, textes de l'interface
 │   │   ├── pages/
-│   │   │   ├── index.astro       # Accueil (derniers articles)
+│   │   │   ├── index.astro       # Accueil de la langue par défaut
+│   │   │   ├── [lang]/index.astro # Accueil des autres langues (/fr/, /en/…)
 │   │   │   ├── [...uri].astro    # Toutes les pages WordPress, générées au build
 │   │   │   └── preview.astro     # Preview des brouillons (rendue à la demande)
 │   │   └── utils/rewriteUrls.ts  # Liens internes du contenu → frontend
@@ -258,6 +261,17 @@ Hostinger ne permet pas de faire pointer la racine d'un domaine temporaire vers 
 
 > Polylang n'expose pas les langues dans GraphQL tout seul : il faudra ajouter
 > l'extension **WPGraphQL Polylang** pour filtrer par langue (`language: FR`).
+
+### Dans le frontend Astro
+Les URLs suivent celles de Polylang : la langue par défaut est à la racine, les autres sous leur préfixe (`/fr/`, `/en/`).
+- Chaque langue a son accueil, avec les derniers articles dans cette langue.
+- `<html lang>` et `og:locale` suivent la langue du contenu (`fr-FR`, `en-GB`…).
+- Les balises `<link rel="alternate" hreflang>` relient chaque page à ses traductions.
+- Le sélecteur de langue mène à la traduction de la page, ou à l'accueil de la langue si la page n'est pas traduite.
+- Les textes de l'interface (« Derniers articles »…) sont dans `src/lib/i18n.ts`. Ajoute une entrée pour toute nouvelle langue.
+
+> Un contenu sans langue (créé avant l'activation de Polylang) n'apparaît sur aucun accueil.
+> Assigne-lui une langue dans l'admin.
 
 ### Récupérer les données dans Astro
 

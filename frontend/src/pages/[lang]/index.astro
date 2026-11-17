@@ -1,0 +1,19 @@
+---
+/** Accueil des autres langues (/fr/, /en/…), selon l'URL donnée par Polylang. */
+import HomePage from '../../components/HomePage.astro';
+import { getLanguages, type WpLanguage } from '../../lib/wordpress';
+
+export async function getStaticPaths() {
+  const languages = await getLanguages();
+  return languages.languages
+    .filter((language) => language.homeUri !== '/')
+    .map((language) => ({
+      params: { lang: language.homeUri.replace(/^\/|\/$/g, '') },
+      props: { language, languages },
+    }));
+}
+
+const { language, languages } = Astro.props as { language: WpLanguage; languages: Awaited<ReturnType<typeof getLanguages>> };
+---
+
+<HomePage language={language} languages={languages} />

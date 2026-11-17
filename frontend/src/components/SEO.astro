@@ -1,27 +1,38 @@
 ---
 /**
- * Balises SEO (title, description, Open Graph, canonical).
+ * Balises SEO (title, description, Open Graph, canonical, hreflang).
  */
+import type { Alternate } from '../lib/i18n';
+
 interface Props {
   title: string;
   description?: string;
   image?: string;
   noindex?: boolean;
+  /** Langue de la page (fr-FR…). */
+  hreflang?: string;
+  /** Versions de la page dans les autres langues. */
+  alternates?: Alternate[];
 }
 
-const { title, description = '', image, noindex = false } = Astro.props;
-const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+const { title, description = '', image, noindex = false, hreflang, alternates = [] } = Astro.props;
+const absolute = (path: string) => (Astro.site ? new URL(path, Astro.site).href : path);
+const canonical = Astro.site ? absolute(Astro.url.pathname) : undefined;
 const plainDescription = description.replace(/<[^>]*>/g, '').trim();
+// hreflang uniquement vers les vraies traductions (pas vers l'accueil de repli).
+const translations = alternates.filter((alt) => alt.translated);
 ---
 
 <title>{title}</title>
 {plainDescription && <meta name="description" content={plainDescription} />}
 {noindex && <meta name="robots" content="noindex, nofollow" />}
 {canonical && <link rel="canonical" href={canonical} />}
+{translations.length > 1 && translations.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={absolute(alt.href)} />)}
 
 <meta property="og:title" content={title} />
 {plainDescription && <meta property="og:description" content={plainDescription} />}
 <meta property="og:type" content="website" />
+{hreflang && <meta property="og:locale" content={hreflang.replace('-', '_')} />}
 {canonical && <meta property="og:url" content={canonical} />}
 {image && <meta property="og:image" content={image} />}
 

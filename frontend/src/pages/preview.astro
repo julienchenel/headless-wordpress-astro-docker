@@ -4,7 +4,8 @@
  * Lien généré par WordPress (bouton « Prévisualiser ») : /preview?token=...
  */
 import Base from '../layouts/Base.astro';
-import { getPreview, getSettings } from '../lib/wordpress';
+import { languageOf, t, toHreflang } from '../lib/i18n';
+import { getLanguages, getPreview, getSettings } from '../lib/wordpress';
 import { rewriteUrls } from '../utils/rewriteUrls';
 
 export const prerender = false;
@@ -16,11 +17,13 @@ const node = token ? await getPreview(token) : null;
 if (!node) {
   return new Response('Lien de preview invalide ou expiré.', { status: 401 });
 }
-const settings = await getSettings();
+const [settings, languages] = await Promise.all([getSettings(), getLanguages()]);
+const language = languageOf(node, languages);
+const strings = t(language?.slug);
 ---
 
-<Base title={`Preview : ${node.title ?? ''}`} noindex>
-  <p class="mb-6 rounded bg-amber-100 px-3 py-2 text-sm">Preview — brouillon non publié</p>
+<Base title={`Preview : ${node.title ?? ''}`} lang={language?.slug} hreflang={toHreflang(language)} noindex>
+  <p class="mb-6 rounded bg-amber-100 px-3 py-2 text-sm">{strings.preview}</p>
   <article>
     <h1 class="mb-6 text-3xl font-bold">{node.title}</h1>
     <div class="prose" set:html={rewriteUrls(node.content, settings.url)} />
