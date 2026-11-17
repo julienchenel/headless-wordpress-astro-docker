@@ -1,0 +1,12 @@
+# --- Frontend Astro (développement) : serveur de dev sur le port 3000 ---
+# En production, Hostinger build et sert le frontend lui-même (voir Readme).
+FROM node:24-alpine
+
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-fund --no-audit
+
+COPY frontend/ .
+
+EXPOSE 3000
+CMD ["npm", "run", "dev"]

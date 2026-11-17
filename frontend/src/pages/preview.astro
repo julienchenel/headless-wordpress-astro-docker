@@ -1,0 +1,28 @@
+---
+/**
+ * Preview d'un brouillon, rendue à la demande (pas au build).
+ * Lien généré par WordPress (bouton « Prévisualiser ») : /preview?token=...
+ */
+import Base from '../layouts/Base.astro';
+import { getPreview, getSettings } from '../lib/wordpress';
+import { rewriteUrls } from '../utils/rewriteUrls';
+
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const token = Astro.url.searchParams.get('token');
+const node = token ? await getPreview(token) : null;
+if (!node) {
+  return new Response('Lien de preview invalide ou expiré.', { status: 401 });
+}
+const settings = await getSettings();
+---
+
+<Base title={`Preview : ${node.title ?? ''}`} noindex>
+  <p class="mb-6 rounded bg-amber-100 px-3 py-2 text-sm">Preview — brouillon non publié</p>
+  <article>
+    <h1 class="mb-6 text-3xl font-bold">{node.title}</h1>
+    <div class="prose" set:html={rewriteUrls(node.content, settings.url)} />
+  </article>
+</Base>

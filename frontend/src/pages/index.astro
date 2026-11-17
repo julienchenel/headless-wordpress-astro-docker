@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+import { getLatestPosts, getSettings } from '../lib/wordpress';
+
+const [settings, posts] = await Promise.all([getSettings(), getLatestPosts(10)]);
+---
+
+<Base title={settings.title} description={settings.description}>
+  <h1 class="mb-8 text-3xl font-bold">{settings.title}</h1>
+  <ul class="space-y-6">
+    {
+      posts.map((post) => (
+        <li>
+          <a class="text-xl font-semibold underline" href={post.uri}>{post.title}</a>
+          <div class="text-slate-600" set:html={post.excerpt} />
+        </li>
+      ))
+    }
+  </ul>
+</Base>

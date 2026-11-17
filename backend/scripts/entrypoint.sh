@@ -1,53 +1,40 @@
 #!/bin/sh
+# Démarrage du conteneur WordPress : dépendances, installation au premier
+# lancement, puis exécution de la commande (Supervisor : PHP-FPM + Nginx).
+set -e
 
-# --- Attendre que MySQL soit prêt ---
-echo "⏳ Attente de MySQL..."
-while ! mysqladmin ping -h mysql -u ${WORDPRESS_DB_USER} -p${WORDPRESS_DB_PASSWORD} --silent; do
-    sleep 1
-done
-echo "✅ MySQL est prêt !"
+cd /var/www/html
 
-# --- Configurer WordPress (si non installé) ---
-if ! wp core is-installed --allow-root; then
+# --- Dépendances : backend/ est monté depuis l'hôte, vendor/ peut manquer ---
+if [ ! -f vendor/autoload.php ] || [ ! -d web/wp ]; then
+    echo "⏳ composer install..."
+    su-exec www-data composer install --no-interaction --no-progress
+fi
+
+# --- Lire une variable de backend/.env (même parsing que WordPress) ---
+env_get() {
+    php -r 'require "vendor/autoload.php";
+        Dotenv\Dotenv::createImmutable(".")->safeLoad();
+        echo $_ENV[$argv[1]] ?? "";' "$1"
+}
+
+# --- Installer WordPress si la base est vide ---
+if ! wp core is-installed 2>/dev/null; then
     echo "⏳ Installation de WordPress..."
     wp core install \
-        --url=${WP_HOME} \
-        --title="Headless WordPress" \
-        --admin_user=admin \
-        --admin_password=${WORDPRESS_DB_PASSWORD} \
-        --admin_email=admin@localhost \
-        --skip-email \
-        --allow-root
+        --url="$(env_get WP_HOME)" \
+        --title="$(env_get WP_TITLE)" \
+        --admin_user="$(env_get WP_ADMIN_USER)" \
+        --admin_password="$(env_get WP_ADMIN_PASSWORD)" \
+        --admin_email="$(env_get WP_ADMIN_EMAIL)" \
+        --skip-email
 
-    # --- Activer les plugins ---
-    wp plugin install pods headless-bridge litespeed-cache query-monitor ithemes-security --activate --allow-root
+    # Thème, plugins et permaliens : mu-plugin headless-bootstrap (au premier chargement).
+    wp eval 'echo "Configuration : ok\n";'
 
-    # --- Configurer Headless Bridge ---
-    wp option update headless_bridge_pods_support true --allow-root
-    wp option update headless_bridge_cache_enabled true --allow-root
-    wp option update headless_bridge_cache_driver memcached --allow-root
-    wp option update headless_bridge_cache_ttl 3600 --allow-root
-
-    # --- Configurer LiteSpeed Cache ---
-    wp option update litespeed-cache object true --allow-root
-    wp option update litespeed-cache object_memcached_host memcached --allow-root
-    wp option update litespeed-cache object_memcached_port 11211 --allow-root
-
-    # --- Configurer les permaliens ---
-    wp rewrite structure '/%postname%/' --hard --allow-root
-    wp rewrite flush --allow-root
-
-    # --- Créer un utilisateur par défaut ---
-    wp user create neiluj neiluj@localhost --user_pass=${WORDPRESS_DB_PASSWORD} --role=administrator --allow-root
-
-    echo "✅ WordPress installé et configuré !"
+    echo "✅ WordPress installé : $(env_get WP_HOME)/wp-admin (utilisateur $(env_get WP_ADMIN_USER))"
 else
     echo "✅ WordPress déjà installé."
 fi
 
-# --- Copier les mu-plugins ---
-cp -r /var/www/html/web/wp-content/mu-plugins/* /var/www/html/web/wp-content/mu-plugins/ 2>/dev/null || true
-
-# --- Démarrer PHP-FPM ---
-echo "🚀 Démarrage de PHP-FPM..."
 exec "$@"

@@ -4,8 +4,7 @@
  * Description: Optimise WordPress pour le headless.
  */
 
-// --- Désactiver les révisions ---
-define('WP_POST_REVISIONS', 3);
+// Les révisions sont limitées dans config/application.php (WP_POST_REVISIONS).
 
 // --- Désactiver les pingbacks/trackbacks ---
 function headless_disable_pingbacks($methods) {

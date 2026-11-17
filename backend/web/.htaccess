@@ -1,0 +1,34 @@
+# --- Hostinger (LiteSpeed) : racine web de Bedrock (backend/web) ---
+# Fonctionne aussi quand backend/.htaccess redirige ici (racine web = backend/).
+# En local, Nginx utilise docker/nginx/conf.d/wordpress.conf à la place.
+
+Options -Indexes
+
+# Fichiers sensibles
+<FilesMatch "^\.|\.(env|log|lock|yml|json|md)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Pas de PHP dans les uploads
+    RewriteRule ^wp-content/uploads/.*\.php$ - [F,L]
+
+    # Bedrock : l'admin est dans /wp
+    RewriteRule ^wp-admin/?$ /wp/wp-admin/ [R=302,L]
+    RewriteRule ^wp-login\.php$ /wp/wp-login.php [R=302,L]
+</IfModule>
+
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteBase /
+    RewriteRule ^index\.php$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress

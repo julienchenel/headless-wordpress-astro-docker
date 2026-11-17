@@ -1,0 +1,28 @@
+---
+/**
+ * Toutes les pages WordPress (articles, pages, CPT Pods exposés dans GraphQL),
+ * générées au build à partir de leur URI.
+ */
+import Base from '../layouts/Base.astro';
+import { getAllNodes, getSettings, type WpNode } from '../lib/wordpress';
+import { rewriteUrls } from '../utils/rewriteUrls';
+
+export async function getStaticPaths() {
+  const nodes = await getAllNodes();
+  return nodes.map((node) => ({
+    params: { uri: node.uri.replace(/^\/|\/$/g, '') },
+    props: { node },
+  }));
+}
+
+const { node } = Astro.props as { node: WpNode };
+const settings = await getSettings();
+---
+
+<Base title={`${node.title ?? ''} – ${settings.title}`} description={node.excerpt}>
+  <a class="text-sm underline" href="/">← {settings.title}</a>
+  <article class="mt-6">
+    <h1 class="mb-6 text-3xl font-bold">{node.title}</h1>
+    <div class="prose" set:html={rewriteUrls(node.content, settings.url)} />
+  </article>
+</Base>

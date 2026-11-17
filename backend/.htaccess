@@ -1,0 +1,13 @@
+# --- Hostinger : racine web = ce dossier (domaine temporaire ou principal) ---
+# Seul web/ est public : toutes les requêtes y sont redirigées en interne.
+# config/, vendor/, .env, composer.* ne sont donc jamais accessibles.
+# (Si la racine web pointe directement sur web/, ce fichier n'est pas lu.)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/web/
+    RewriteRule ^(.*)$ /web/$1 [L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

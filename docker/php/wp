@@ -1,0 +1,6 @@
+#!/bin/sh
+# Lance le WP-CLI du projet (vendor/bin/wp) en tant que www-data.
+if [ "$(id -u)" = "0" ]; then
+    exec su-exec www-data /var/www/html/vendor/bin/wp "$@"
+fi
+exec /var/www/html/vendor/bin/wp "$@"

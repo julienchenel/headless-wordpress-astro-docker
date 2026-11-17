@@ -1,43 +1,31 @@
-<!--
-Props: { data: HeadlessBridgePost }
-const { data } = Astro.props;
+---
+/**
+ * Balises SEO (title, description, Open Graph, canonical).
+ */
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  noindex?: boolean;
+}
 
-const {
-  title = 'Mon Site Headless',
-  meta_description = '',
-  og_title = title,
-  og_description = meta_description,
-  og_image = '',
-  canonical = '',
-  schema = null,
-} = data?.yoast_meta || {};
--->
+const { title, description = '', image, noindex = false } = Astro.props;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+const plainDescription = description.replace(/<[^>]*>/g, '').trim();
+---
 
-<head>
-  <!-- Titres -->
-  <title>{title}</title>
-  <meta name="description" content={meta_description} />
+<title>{title}</title>
+{plainDescription && <meta name="description" content={plainDescription} />}
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+{canonical && <link rel="canonical" href={canonical} />}
 
-  <!-- Open Graph -->
-  <meta property="og:title" content={og_title} />
-  <meta property="og:description" content={og_description} />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={canonical || Astro.url.pathname} />
-  {og_image && <meta property="og:image" content={og_image} />}
+<meta property="og:title" content={title} />
+{plainDescription && <meta property="og:description" content={plainDescription} />}
+<meta property="og:type" content="website" />
+{canonical && <meta property="og:url" content={canonical} />}
+{image && <meta property="og:image" content={image} />}
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content={og_title} />
-  <meta name="twitter:description" content={og_description} />
-  {og_image && <meta name="twitter:image" content={og_image} />}
-
-  <!-- Canonical -->
-  {canonical && <link rel="canonical" href={canonical} />}
-
-  <!-- Schema.org (JSON-LD) -->
-  {schema && (
-    <script type="application/ld+json">
-      {JSON.stringify(schema)}
-    </script>
-  )}
-</head>
+<meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+<meta name="twitter:title" content={title} />
+{plainDescription && <meta name="twitter:description" content={plainDescription} />}
+{image && <meta name="twitter:image" content={image} />}

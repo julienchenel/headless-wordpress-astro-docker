@@ -40,26 +40,32 @@ function headless_disable_jquery_migrate($scripts) {
 }
 add_action('wp_default_scripts', 'headless_disable_jquery_migrate');
 
-// --- Limiter les tentatives de connexion ---
-function headless_limit_login_attempts($user) {
-    if (get_transient('headless_login_lock_' . $user)) {
+// --- Limiter les tentatives de connexion (5 échecs = blocage 5 min) ---
+function headless_login_key($username) {
+    return 'headless_login_' . md5(strtolower(trim((string) $username)));
+}
+
+function headless_block_locked_login($user, $username) {
+    if ($username !== '' && $username !== null && get_transient(headless_login_key($username) . '_lock')) {
         return new WP_Error('too_many_attempts', 'Trop de tentatives de connexion. Réessayez plus tard.');
     }
     return $user;
 }
-add_filter('wp_authenticate_user', 'headless_limit_login_attempts');
+add_filter('authenticate', 'headless_block_locked_login', 30, 2);
 
-function headless_track_login_attempts($user, $username) {
-    if (!$user) {
-        $attempts = get_transient('headless_login_attempts_' . $username) ?: 0;
-        if ($attempts >= 5) {
-            set_transient('headless_login_lock_' . $username, true, 300); // 5 min
-        } else {
-            set_transient('headless_login_attempts_' . $username, $attempts + 1, 300);
-        }
+function headless_track_failed_login($username) {
+    $key = headless_login_key($username);
+    $attempts = (int) get_transient($key . '_attempts') + 1;
+    if ($attempts >= 5) {
+        set_transient($key . '_lock', true, 5 * MINUTE_IN_SECONDS);
+        delete_transient($key . '_attempts');
     } else {
-        delete_transient('headless_login_attempts_' . $username);
+        set_transient($key . '_attempts', $attempts, 5 * MINUTE_IN_SECONDS);
     }
-    return $user;
 }
-add_filter('wp_authenticate_user', 'headless_track_login_attempts', 10, 2);
+add_action('wp_login_failed', 'headless_track_failed_login');
+
+function headless_reset_login_attempts($username) {
+    delete_transient(headless_login_key($username) . '_attempts');
+}
+add_action('wp_login', 'headless_reset_login_attempts');

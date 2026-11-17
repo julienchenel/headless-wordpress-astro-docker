@@ -1,0 +1,13 @@
+.git
+.github
+.zed
+**/.env
+backend/vendor
+backend/web/wp
+backend/web/wp-content/plugins/*
+backend/web/wp-content/uploads
+backend/web/wp-content/cache
+backend/web/wp-content/debug.log
+frontend/node_modules
+frontend/dist
+frontend/.astro

@@ -16,6 +16,7 @@ backend/web/wp-content/cache/
 backend/web/wp-content/plugins/*/
 !backend/web/wp-content/plugins/.gitkeep
 backend/vendor/
+backend/web/wp/
 
 # Frontend
 frontend/.env

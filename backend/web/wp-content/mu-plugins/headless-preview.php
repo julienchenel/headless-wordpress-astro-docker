@@ -1,75 +1,79 @@
 <?php
 /**
  * Plugin Name: Headless Preview
- * Description: Ajoute un bouton de preview pour les brouillons (JWT).
+ * Description: Le bouton « Prévisualiser » ouvre le brouillon sur le frontend Astro (/preview?token=...).
+ *              Le token (JWT, 1 h) est signé et vérifié ici : le frontend n'a aucun secret.
  */
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
-add_action('admin_bar_menu', 'headless_add_preview_button', 100);
-add_action('rest_api_init', 'headless_register_preview_endpoint');
+const HEADLESS_PREVIEW_TTL = HOUR_IN_SECONDS;
 
-function headless_add_preview_button($wp_admin_bar) {
-    if (!is_admin()) {
-        return;
+/**
+ * Lien de preview vers le frontend pour un contenu que l'utilisateur peut modifier.
+ */
+function headless_preview_url(WP_Post $post): ?string
+{
+    if (!defined('FRONTEND_URL') || !FRONTEND_URL || !defined('JWT_SECRET') || strlen(JWT_SECRET) < 32) {
+        return null;
     }
-
-    global $post;
-    if (!$post || $post->post_status !== 'draft') {
-        return;
+    if (!current_user_can('edit_post', $post->ID)) {
+        return null;
     }
 
     $token = JWT::encode([
-        'user_id' => get_current_user_id(),
         'post_id' => $post->ID,
-        'exp' => time() + 3600, // 1 heure
-    ], getenv('JWT_SECRET'), 'HS256');
+        'user_id' => get_current_user_id(),
+        'exp' => time() + HEADLESS_PREVIEW_TTL,
+    ], JWT_SECRET, 'HS256');
 
-    $preview_url = sprintf(
-        'http://localhost:3000/preview/%s/%s?token=%s',
-        $post->post_type,
-        $post->post_name,
-        $token
-    );
-
-    $wp_admin_bar->add_node([
-        'id' => 'preview-headless',
-        'title' => 'Prévisualiser (Headless)',
-        'href' => $preview_url,
-        'parent' => 'top-secondary',
-    ]);
+    return untrailingslashit(FRONTEND_URL) . '/preview?token=' . rawurlencode($token);
 }
 
-function headless_register_preview_endpoint() {
-    register_rest_route('headless/v1', '/preview/(?P<post_type>[a-z0-9_-]+)/(?P<post_name>[a-z0-9_-]+)', [
+// --- Bouton « Prévisualiser » (éditeur de blocs et classique) ---
+add_filter('preview_post_link', function ($link, $post) {
+    return headless_preview_url($post) ?? $link;
+}, 10, 2);
+
+// --- Endpoint lu par le frontend : GET /wp-json/headless/v1/preview?token=... ---
+add_action('rest_api_init', function () {
+    register_rest_route('headless/v1', '/preview', [
         'methods' => 'GET',
         'callback' => 'headless_preview_callback',
-        'permission_callback' => '__return_true',
+        'permission_callback' => '__return_true', // L'accès est contrôlé par le token.
+        'args' => [
+            'token' => ['type' => 'string', 'required' => true],
+        ],
     ]);
-}
+});
 
-function headless_preview_callback($request) {
-    $post_type = $request->get_param('post_type');
-    $post_name = $request->get_param('post_name');
-    $token = $request->get_param('token');
-
+function headless_preview_callback(WP_REST_Request $request)
+{
     try {
-        $decoded = JWT::decode($token, getenv('JWT_SECRET'), ['HS256']);
-        $post_id = $decoded->post_id;
-
-        $post = get_post($post_id);
-        if (!$post || $post->post_name !== $post_name) {
-            return new WP_Error('invalid_post', 'Post introuvable', ['status' => 404]);
-        }
-
-        // --- Récupérer les données via Headless Bridge ---
-        $data = apply_filters('headless_bridge_data', $post, [
-            'include_fields' => true,
-            'include_taxonomies' => true,
-        ]);
-
-        return new WP_REST_Response($data, 200);
-    } catch (Exception $e) {
-        return new WP_Error('invalid_token', 'Token invalide', ['status' => 401]);
+        $decoded = JWT::decode((string) $request->get_param('token'), new Key(JWT_SECRET, 'HS256'));
+    } catch (Throwable $e) {
+        return new WP_Error('invalid_token', 'Token invalide ou expiré', ['status' => 401]);
     }
+
+    $post = get_post((int) ($decoded->post_id ?? 0));
+    if (!$post || !user_can((int) ($decoded->user_id ?? 0), 'edit_post', $post->ID)) {
+        return new WP_Error('invalid_post', 'Contenu introuvable', ['status' => 404]);
+    }
+
+    // Brouillon : dernière autosave de l'auteur si elle est plus récente.
+    $autosave = wp_get_post_autosave($post->ID, (int) $decoded->user_id);
+    $source = ($autosave && strtotime($autosave->post_modified_gmt) > strtotime($post->post_modified_gmt)) ? $autosave : $post;
+
+    $response = new WP_REST_Response([
+        'id' => $post->ID,
+        'uri' => wp_make_link_relative(get_permalink($post)),
+        'title' => get_the_title($source),
+        'content' => apply_filters('the_content', $source->post_content),
+        'excerpt' => $source->post_excerpt,
+        'date' => get_post_time('c', true, $post) ?: null, // null pour un brouillon jamais publié
+    ], 200);
+    $response->header('Cache-Control', 'no-store');
+
+    return $response;
 }

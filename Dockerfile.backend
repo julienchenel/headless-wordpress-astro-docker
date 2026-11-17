@@ -1,0 +1,51 @@
+# --- WordPress (Bedrock) : PHP-FPM 8.5 + Nginx, pilotés par Supervisor ---
+FROM php:8.5-fpm-alpine
+
+# --- Extensions PHP (l'installeur gère les dépendances de compilation et d'exécution) ---
+# OPcache est intégré à PHP 8.5, inutile de l'installer.
+COPY --from=mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions bcmath exif gd imagick intl memcached mysqli pdo_mysql zip
+
+# --- Paquets système ---
+RUN apk add --no-cache nginx supervisor su-exec shadow
+
+# --- www-data prend l'UID/GID de l'utilisateur WSL : PHP peut écrire dans backend/ monté ---
+ARG UID=1000
+ARG GID=1000
+RUN groupmod -o -g "$GID" www-data && usermod -o -u "$UID" -g "$GID" www-data
+
+# --- Composer ---
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+# --- Config PHP ---
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-app.ini
+COPY docker/php/conf.d/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
+COPY docker/php/conf.d/memcached.ini /usr/local/etc/php/conf.d/zz-memcached.ini
+
+# --- Config Nginx (remplace le vhost par défaut d'Alpine), logs vers la sortie Docker ---
+COPY docker/nginx/conf.d/wordpress.conf /etc/nginx/http.d/default.conf
+RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
+
+# --- Supervisor ---
+COPY docker/supervisor/supervisord.conf /etc/supervisord.conf
+
+# --- WP-CLI : `wp ...` s'exécute en www-data avec le WP-CLI du projet ---
+COPY docker/php/wp /usr/local/bin/wp
+ENV WP_CLI_CACHE_DIR=/tmp/wp-cli-cache
+
+# --- Code WordPress (en dev, backend/ est monté par-dessus via docker-compose) ---
+WORKDIR /var/www/html
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install --no-interaction --no-autoloader --no-progress
+COPY backend/ .
+RUN composer dump-autoload --optimize \
+    && chown -R www-data:www-data /var/www/html
+
+# --- Démarrage : installation de WordPress au premier lancement, puis Supervisor ---
+COPY backend/scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/wp
+
+EXPOSE 80
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]
