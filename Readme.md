@@ -109,6 +109,14 @@ cp frontend/.env.example frontend/.env
 - `backend/.env` : `WP_ADMIN_PASSWORD`, `JWT_SECRET` (32 caractères minimum) et les clés de sécurité `AUTH_KEY`… (à générer sur [roots.io/salts.html](https://roots.io/salts.html)).
 
 ### 3. Démarrer les conteneurs Docker
+
+Les sites locaux ont leur propre nom en `*.localhost` (un nom par site pour le gestionnaire de mots de passe). Ils passent par un aiguilleur Traefik partagé entre tous tes projets, dans `~/projects/local-proxy`. Il se démarre une seule fois, puis redémarre avec Docker :
+```bash
+cd ~/projects/local-proxy && docker compose up -d
+```
+L'aiguilleur a besoin du port 80, que l'Apache d'Ubuntu occupe s'il est installé : `sudo systemctl disable --now apache2`.
+
+Puis, dans ce projet :
 ```bash
 docker compose up -d --build
 ```
@@ -124,19 +132,20 @@ Suivre l'installation : `docker compose logs -f wordpress`.
 
 | Service | URL | Identifiants |
 | --- | --- | --- |
-| Admin WordPress | [http://localhost:8080/wp/wp-admin](http://localhost:8080/wp/wp-admin) | `WP_ADMIN_USER` / `WP_ADMIN_PASSWORD` |
-| API GraphQL | [http://localhost:8080/graphql](http://localhost:8080/graphql) | - |
-| API REST | [http://localhost:8080/wp-json](http://localhost:8080/wp-json) | - |
+| Admin WordPress | [http://cms.headless.localhost/wp/wp-admin](http://cms.headless.localhost/wp/wp-admin) | `WP_ADMIN_USER` / `WP_ADMIN_PASSWORD` |
+| API GraphQL | [http://cms.headless.localhost/graphql](http://cms.headless.localhost/graphql) | - |
+| API REST | [http://cms.headless.localhost/wp-json](http://cms.headless.localhost/wp-json) | - |
 | MySQL | `127.0.0.1:3307` | `DB_USER` / `DB_PASSWORD` |
-| Astro (Dev) | [http://localhost:3000](http://localhost:3000) | - |
+| Astro (Dev) | [http://headless.localhost](http://headless.localhost) | - |
 
 > MySQL est exposé sur le port **3307** de l'hôte (le 3306 est souvent déjà pris par un MySQL local).
+> En secours, sans l'aiguilleur : WordPress répond aussi sur `localhost:8080` (redirigé vers son nom) et Astro sur `localhost:3000`.
 
 ## 🧪 Développement
 
 ### Backend (WordPress)
-- Admin : http://localhost:8080/wp/wp-admin
-- API GraphQL : http://localhost:8080/graphql (IDE GraphiQL dans l'admin : **GraphQL → GraphiQL IDE**)
+- Admin : http://cms.headless.localhost/wp/wp-admin
+- API GraphQL : http://cms.headless.localhost/graphql (IDE GraphiQL dans l'admin : **GraphQL → GraphiQL IDE**)
 - Preview : le bouton **Prévisualiser** de l'éditeur ouvre le brouillon sur Astro (`/preview?token=…`, valable 1 h).
 - Webhook : à chaque publication (ou modification d'un contenu publié), demande à GitHub de reconstruire le frontend (`headless-webhook.php`, une fois par minute au plus).
 
@@ -156,7 +165,7 @@ docker exec wp_headless wp plugin activate nom-du-plugin
 ```
 
 ### Frontend (Astro)
-- Dev server : http://localhost:3000 (conteneur `astro`, ou `npm run dev` dans `frontend/`)
+- Dev server : http://headless.localhost (conteneur `astro`, ou `npm run dev` dans `frontend/`)
 - Build : `npm run build` → `dist/client` (pages statiques) + `dist/server` (serveur Node pour la preview)
 - Démarrer le build : `npm start`
 - Les données viennent de `src/lib/wordpress.ts` (WPGraphQL). L'URL de WordPress est `WP_URL`.
@@ -294,7 +303,7 @@ const data = await wpQuery<{ posts: { nodes: { title: string; uri: string }[] } 
 - Vérifie que le plugin est activé : `docker exec wp_headless wp plugin list`.
 - Teste l'API directement :
   ```bash
-  curl -X POST -H 'Content-Type: application/json' -d '{"query":"{ generalSettings { title } }"}' http://localhost:8080/graphql
+  curl -X POST -H 'Content-Type: application/json' -d '{"query":"{ generalSettings { title } }"}' http://cms.headless.localhost/graphql
   ```
 - Si `/graphql` renvoie la page du thème, vérifie que le mu-plugin `headless-graphql.php` est présent.
 
@@ -333,9 +342,9 @@ docker compose up -d --build
 ⏳ Attends 1 à 2 minutes le temps que WordPress s'installe (`docker compose logs -f wordpress`).
 
 **Étape 4 : Accède à WordPress**
-- Admin : [http://localhost:8080/wp/wp-admin](http://localhost:8080/wp/wp-admin)
+- Admin : [http://cms.headless.localhost/wp/wp-admin](http://cms.headless.localhost/wp/wp-admin)
 - Identifiant / mot de passe : `WP_ADMIN_USER` / `WP_ADMIN_PASSWORD` (dans `backend/.env`)
-- Frontend (Astro) : http://localhost:3000
+- Frontend (Astro) : http://headless.localhost
 
 **Étape 5 : Configure Pods**
 1. Va dans **Pods Admin → Add New**.
@@ -347,13 +356,13 @@ docker compose up -d --build
 ```bash
 curl -X POST -H 'Content-Type: application/json' \
   -d '{"query":"{ portfolios { nodes { title uri } } }"}' \
-  http://localhost:8080/graphql
+  http://cms.headless.localhost/graphql
 ```
 (`portfolios` = nom GraphQL pluriel défini dans le Pod.)
 
 **Étape 7 : Développe ton Frontend Astro**
 
-Le serveur de dev tourne déjà dans le conteneur `astro` : http://localhost:3000.
+Le serveur de dev tourne déjà dans le conteneur `astro` : http://headless.localhost.
 
 Exemple de page pour le CPT Portfolio :
 

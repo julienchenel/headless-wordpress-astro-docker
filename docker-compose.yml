@@ -16,8 +16,14 @@ services:
       - ./backend:/var/www/html  # Code backend (vendor, web/wp et plugins installés par Composer)
     networks:
       - headless_network
+      - proxy
     ports:
-      - "8080:80"  # Nginx (port 80 dans le conteneur → 8080 sur l'hôte)
+      - "8080:80"  # Accès direct de secours (l'adresse normale est http://cms.headless.localhost)
+    labels:
+      # Aiguilleur local partagé (~/projects/local-proxy)
+      - traefik.enable=true
+      - traefik.http.routers.headless-cms.rule=Host(`cms.headless.localhost`)
+      - traefik.http.services.headless-cms.loadbalancer.server.port=80
 
   # --- Base de données MySQL 8.0 ---
   mysql:
@@ -61,14 +67,19 @@ services:
     restart: unless-stopped
     environment:
       - WP_URL=http://wordpress:80  # WordPress vu depuis le conteneur
-      - SITE_URL=http://localhost:3000
+      - SITE_URL=http://headless.localhost
     volumes:
       - ./frontend:/app  # Montage du code frontend
       - /app/node_modules  # node_modules isolé dans le conteneur
     networks:
       - headless_network
+      - proxy
     ports:
-      - "3000:3000"  # Astro dev server
+      - "3000:3000"  # Accès direct de secours (l'adresse normale est http://headless.localhost)
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.headless-front.rule=Host(`headless.localhost`)
+      - traefik.http.services.headless-front.loadbalancer.server.port=3000
     depends_on:
       - wordpress
 
@@ -76,7 +87,10 @@ services:
 volumes:
   mysql_data:
 
-# --- Réseau interne ---
+# --- Réseaux ---
 networks:
   headless_network:
     driver: bridge
+  # Aiguilleur local partagé (~/projects/local-proxy) : à démarrer avant ce projet
+  proxy:
+    external: true
