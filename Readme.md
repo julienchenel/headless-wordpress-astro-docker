@@ -179,31 +179,48 @@ Active Object Cache (Memcached) dans les paramètres.
 
 ## 🔄 Déploiement sur Hostinger
 
-Tout est hébergé sur Hostinger, sur deux (sous-)domaines :
+Tout est hébergé sur Hostinger (forfait Business), sur deux sites :
 
-| Site | Exemple | Type Hostinger | Branche déployée |
+| Site | URL actuelle (domaine temporaire) | Type Hostinger | Branche déployée |
 | --- | --- | --- | --- |
-| WordPress (CMS + API) | `cms.exemple.fr` | PHP 8.5, racine web sur `web/` | `deploy/backend` |
-| Frontend Astro | `exemple.fr` | Node.js 24, app `astro`, dossier `frontend` | `deploy/frontend` |
+| WordPress (CMS + API) | https://evident-snow-eland-65.hostingersite.com | PHP 8.5, déploiement Git dans `public_html/app` | `deploy/backend` |
+| Frontend Astro | https://nocturnal-orangered-turkey-22.hostingersite.com | Node.js 24, app `astro`, dossier `frontend` | `deploy/frontend` |
 
-À chaque push sur `main`, GitHub Actions (`.github/workflows/deploy.yml`) met à jour ces deux branches, et Hostinger les redéploie automatiquement :
-- **`deploy/backend`** contient `backend/` avec `vendor/`, WordPress et les plugins déjà installés par Composer. Le `.env` de production et les uploads restent sur le serveur et ne sont jamais écrasés.
-- **`deploy/frontend`** est une copie de `main` : Hostinger lance `npm run build` dans `frontend/` et sert le site.
+Admin WordPress : https://evident-snow-eland-65.hostingersite.com/wp/wp-admin
 
-Quand un contenu est publié dans WordPress, le mu-plugin `headless-webhook.php` déclenche le même workflow, qui ne reconstruit que le frontend.
+### Comment ça marche
+À chaque push sur `main`, GitHub Actions (`.github/workflows/deploy.yml`) met à jour deux branches :
+- **`deploy/backend`** contient `backend/` avec `vendor/`, WordPress et les plugins déjà installés par Composer. Un webhook GitHub prévient Hostinger, qui fait un `git pull` dans `public_html/app` puis un `composer install`. Le `.env` de production et les uploads, non suivis par Git, restent en place.
+- **`deploy/frontend`** est une copie de `main`. Hostinger le détecte, lance `npm run build` dans `frontend/` et redémarre le serveur Node.
 
-### Mise en place (une fois)
-1. **Hostinger** : connecter GitHub dans hPanel (section Git), puis créer les deux sites.
-2. **WordPress** : créer une base MySQL, déployer `deploy/backend` et faire pointer la racine web du domaine du CMS sur `web/`. Le `.htaccess` de `backend/` bloque tout le reste.
-3. **`.env` de production**, à créer sur le serveur à côté de `composer.json`, à partir de `backend/.env.exemple` :
-   - `WP_ENV=production`, `WP_HOME=https://cms.exemple.fr`, identifiants de la base Hostinger (`DB_HOST=localhost`) ;
-   - nouvelles clés de sécurité et nouveau `JWT_SECRET` ;
-   - `LSCACHE_OBJECT=false` (pas de Memcached sur l'hébergement mutualisé) ;
-   - `FRONTEND_URL=https://exemple.fr` ;
-   - `GITHUB_REBUILD_REPO` et `GITHUB_REBUILD_TOKEN`, un jeton GitHub *fine-grained* limité au dépôt, avec la permission *Contents: write*.
-4. **Frontend** : renseigner `frontend/.env.production` (`WP_URL`, `SITE_URL`), puis déployer `deploy/frontend` en Node.js (app `astro`, dossier `frontend`, Node 24).
+Quand un contenu est publié dans WordPress, le mu-plugin `headless-webhook.php` déclenche le même workflow, qui ne reconstruit que le frontend. Il faut pour cela renseigner `GITHUB_REBUILD_REPO` et `GITHUB_REBUILD_TOKEN` dans le `.env` du serveur (voir plus bas).
 
-Aucun secret GitHub n'est nécessaire : le workflow n'utilise que le jeton fourni automatiquement par GitHub Actions.
+### Organisation du site WordPress
+```
+public_html/
+├── .htaccess        # Redirige tout vers app/web/ (copie : docs/hostinger/public_html.htaccess)
+└── app/             # Clone de deploy/backend
+    ├── .env         # Configuration de production (hors Git, à créer sur le serveur)
+    ├── config/  vendor/  composer.json …
+    └── web/         # Seul dossier servi (index.php, wp/, wp-content/)
+```
+Hostinger ne permet pas de faire pointer la racine d'un domaine temporaire vers un sous-dossier. C'est donc le `.htaccess` de `public_html` qui sert `app/web/`. `.env`, `config/`, `vendor/` et `composer.json` ne sont jamais servis.
+
+> Le gestionnaire de fichiers et l'API Hostinger n'affichent pas les dossiers `vendor/`.
+> Ils sont pourtant bien présents sur le serveur.
+
+### `.env` de production
+À créer dans `public_html/app/.env` à partir de `backend/.env.exemple` :
+- `WP_ENV=production`, `WP_HOME` (URL du CMS), identifiants de la base Hostinger (`DB_HOST=localhost`) ;
+- clés de sécurité et `JWT_SECRET` propres à la production ;
+- `LSCACHE_OBJECT=false` (pas de Memcached sur l'hébergement mutualisé) ;
+- `FRONTEND_URL` (URL du frontend, pour le bouton « Prévisualiser ») ;
+- `GITHUB_REBUILD_REPO=julienchenel/headless-wordpress-astro-docker` et `GITHUB_REBUILD_TOKEN`, un jeton GitHub *fine-grained* limité au dépôt, avec la permission *Contents: write*.
+
+### Changer de domaine
+1. Dans hPanel, rattacher le domaine (ou des sous-domaines) aux deux sites.
+2. Mettre à jour `WP_HOME` et `FRONTEND_URL` dans `public_html/app/.env`.
+3. Mettre à jour `WP_URL` et `SITE_URL` dans `frontend/.env.production`, puis pousser sur `main`.
 
 ## 🔧 Commandes Utiles
 
@@ -352,6 +369,6 @@ const { portfolio } = await wpQuery<{ portfolio: { title: string; content: strin
 ```
 
 **Étape 8 : Déploie sur Hostinger**
-1. Suis la [mise en place](#mise-en-place-une-fois) (une seule fois).
-2. Pousse sur `main` : `git push origin main`.
+1. Pousse sur `main` : `git push origin main` (voir [Déploiement sur Hostinger](#-déploiement-sur-hostinger)).
+2. Le backend et le frontend se redéploient automatiquement.
 3. Suis les déploiements dans l'onglet **Actions** de GitHub, puis dans hPanel.

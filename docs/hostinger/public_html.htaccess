@@ -1,0 +1,12 @@
+# --- Racine du site (public_html) : WordPress est cloné dans app/ (branche deploy/backend) ---
+# Toutes les requêtes sont servies depuis app/web/ ; rien d'autre n'est accessible.
+# Fichier géré à la main (hors Git) : voir le Readme du projet.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/app/web/
+    RewriteRule ^(.*)$ /app/web/$1 [L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>
