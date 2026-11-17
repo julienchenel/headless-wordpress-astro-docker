@@ -3,7 +3,7 @@
         'name' => 'headless-wordpress/bedrock',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'bd2b3ee076a68b6e463d3205189ea42c643980df',
+        'reference' => 'b90a8af42f8ba152375cde42f8aec4e9bbc39225',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -40,7 +40,7 @@
         'headless-wordpress/bedrock' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'bd2b3ee076a68b6e463d3205189ea42c643980df',
+            'reference' => 'b90a8af42f8ba152375cde42f8aec4e9bbc39225',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
