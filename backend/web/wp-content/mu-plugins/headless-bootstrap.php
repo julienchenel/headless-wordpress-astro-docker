@@ -6,7 +6,7 @@
  *              Incrémenter HEADLESS_BOOTSTRAP_VERSION pour rejouer la configuration.
  */
 
-const HEADLESS_BOOTSTRAP_VERSION = 1;
+const HEADLESS_BOOTSTRAP_VERSION = 3;
 
 add_action('init', function () {
     if (!is_blog_installed() || (int) get_option('headless_bootstrap_version') >= HEADLESS_BOOTSTRAP_VERSION) {
@@ -21,7 +21,13 @@ add_action('init', function () {
     }
 
     // --- Plugins requis (installés par Composer) ---
-    $plugins = ['wp-graphql/wp-graphql.php', 'pods/init.php', 'polylang/polylang.php'];
+    $plugins = [
+        'wp-graphql/wp-graphql.php',
+        'pods/init.php',
+        'polylang/polylang.php',
+        'wp-graphql-polylang/wp-graphql-polylang.php', // après WPGraphQL et Polylang
+        'mcp-adapter/mcp-adapter.php', // serveur MCP (capacités : mu-plugin headless-mcp)
+    ];
     if (defined('WP_ENV') && WP_ENV === 'development') {
         $plugins[] = 'query-monitor/query-monitor.php';
     }
