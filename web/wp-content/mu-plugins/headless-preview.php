@@ -72,6 +72,17 @@ function headless_preview_callback(WP_REST_Request $request)
         'content' => apply_filters('the_content', $source->post_content),
         'excerpt' => $source->post_excerpt,
         'date' => get_post_time('c', true, $post) ?: null, // null pour un brouillon jamais publié
+        // Même forme que WPGraphQL Polylang (langue et traductions publiées).
+        'language' => function_exists('pll_get_post_language') && pll_get_post_language($post->ID)
+            ? ['slug' => pll_get_post_language($post->ID)]
+            : null,
+        'translations' => function_exists('pll_get_post_translations')
+            ? array_values(array_filter(array_map(function ($lang, $id) use ($post) {
+                return $id !== $post->ID && get_post_status($id) === 'publish'
+                    ? ['uri' => wp_make_link_relative(get_permalink($id)), 'language' => ['slug' => $lang]]
+                    : null;
+            }, array_keys(pll_get_post_translations($post->ID)), pll_get_post_translations($post->ID))))
+            : [],
     ], 200);
     $response->header('Cache-Control', 'no-store');
 
