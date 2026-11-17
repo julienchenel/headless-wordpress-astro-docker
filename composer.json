@@ -1,0 +1,58 @@
+{
+  "name": "headless-wordpress/bedrock",
+  "type": "project",
+  "license": "MIT",
+  "description": "WordPress Headless avec Bedrock",
+  "authors": [
+    {
+      "name": "Julien",
+      "email": "neiluj.lenehc@gmail.com"
+    }
+  ],
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org"
+    }
+  ],
+  "require": {
+    "php": ">=8.5",
+    "composer/installers": "^2.3",
+    "firebase/php-jwt": "^7.0",
+    "oscarotero/env": "^2.1",
+    "roots/wordpress": "^6.9",
+    "vlucas/phpdotenv": "^5.5",
+    "wpackagist-plugin/better-wp-security": "^10.0",
+    "wpackagist-plugin/litespeed-cache": "^5.7",
+    "wpackagist-plugin/pods": "^3.3",
+    "wpackagist-plugin/polylang": "^3.4",
+    "wpackagist-plugin/query-monitor": "^3.11",
+    "wpackagist-plugin/wp-graphql": "^2.0"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true,
+    "platform-check": false,
+    "allow-plugins": {
+      "composer/installers": true,
+      "roots/wordpress-core-installer": true
+    }
+  },
+  "extra": {
+    "installer-paths": {
+      "web/wp-content/mu-plugins/{$name}/": [
+        "type:wordpress-muplugin"
+      ],
+      "web/wp-content/plugins/{$name}/": [
+        "type:wordpress-plugin"
+      ],
+      "web/wp-content/themes/{$name}/": [
+        "type:wordpress-theme"
+      ]
+    },
+    "wordpress-install-dir": "web/wp"
+  },
+  "require-dev": {
+    "wp-cli/wp-cli-bundle": "^2.12"
+  }
+}

@@ -1,0 +1,4 @@
+.env
+web/wp-content/uploads/
+web/wp-content/cache/
+web/wp-content/debug.log
